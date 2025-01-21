@@ -53,32 +53,35 @@ class PentominoSolver:
         return {k: self.get_rotations(v) for k, v in pieces.items()}
 
     def get_rotations(self, shapes):
-        rotations = set()
         # każdy klocek obracamy 4 razy o 90 stopni, a następnie symetrycznie względem osi x i y
         # dopuszczamy obracanie wokół osi x i y, ponieważ klocki nie są symetryczne
         # dla ułatwienia zadania
+        rotations = set()
         for shape in shapes:
+            current = shape
             for _ in range(4):
-                shape = [(y, -x) for x, y in shape]
-                rotations.add(tuple(sorted(shape)))
-                shape = [(x, -y) for x, y in shape]
-                rotations.add(tuple(sorted(shape)))
+                current = [(y, -x) for x, y in current]
+                rotations.add(tuple(sorted(current)))
+            flipped = [(-x, y) for x, y in shape]
+            for _ in range(4):
+                flipped = [(y, -x) for x, y in flipped]
+                rotations.add(tuple(sorted(flipped)))
         return [list(r) for r in rotations]
 
     def generate_unique_colors(self, num_colors):
         # generujemy num_colors kolorów, które będą używane do rysowania klocków
         return [pygame.Color(i * 20 % 255, (i * 70) % 255, (i * 150) % 255) for i in range(1, num_colors + 1)]
 
-    # funkcja sprawdzająca, czy klocek może zostać umieszczony na planszy
-    # do postawienia klocków zdefiniowałem parę warunków poprawiających wydajność algorytmu:
-    # - pierwszy klocek musi dotykać ściany planszy
-    # - każdy kolejny klocek musi być przylegający do innego klocka (ograniczmamy liczbę bezużytecznych kombinacji)
-    # - klocki nie mogą się nakładać na siebie
-    # - klocki nie mogą wychodzić poza planszę
     def can_place(self, shape, x, y):
+        # funkcja sprawdzająca, czy klocek może zostać umieszczony na planszy
+        # do postawienia klocków zdefiniowałem parę warunków poprawiających wydajność algorytmu:
+        # - pierwszy klocek musi dotykać ściany planszy
+        # - każdy kolejny klocek musi być przylegający do innego klocka (ograniczmamy liczbę bezużytecznych kombinacji)
+        # - klocki nie mogą się nakładać na siebie
+        # - klocki nie mogą wychodzić poza planszę
         is_first_piece = all(all(cell == 0 for cell in row) for row in self.board)
-        adjacent_found = False # zmienna sprawdzadjąca, czy klocek przylega do innego klocka
-        touches_wall = False # zmienna sprawdzająca, czy klocek dotyka ściany planszy
+        adjacent_found = False  # zmienna sprawdzająca, czy klocek przylega do innego klocka
+        touches_wall = False  # zmienna sprawdzająca, czy klocek dotyka ściany planszy
 
         for dx, dy in shape:
             nx, ny = x + dx, y + dy
@@ -105,7 +108,7 @@ class PentominoSolver:
         self.placed_pieces.add(piece_id) 
         self.draw_board()
         pygame.display.update()
-        time.sleep(0.01)
+        time.sleep(0.1)
 
     # funkcja usuwająca klocek z planszy
     # podmienia "id klocka" na zera w miejscach, gdzie się znajdował
@@ -202,6 +205,7 @@ class PentominoSolver:
     # jeśli uda się umieścić wszystkie klocki, zwraca True
     # jeśli nie, cofa ostatnie umieszczenie klocka i próbuje ponownie
     def solve(self, pieces):
+        paused = False
         if all(all(cell != 0 for cell in row) for row in self.board):
             return True
 
@@ -210,6 +214,21 @@ class PentominoSolver:
             for y in range(self.board_height):
                 for x in range(self.board_width):
                     for shape in shapes:
+                        while paused:
+                            for event in pygame.event.get():
+                                if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                                    paused = False
+                                elif event.type == pygame.QUIT:
+                                    pygame.quit()
+                                    exit()
+
+                        for event in pygame.event.get():
+                            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                                paused = True
+                            elif event.type == pygame.QUIT:
+                                pygame.quit()
+                                exit()
+
                         if self.can_place(shape, x, y):
                             self.place(shape, x, y, piece_id)
                             remaining_pieces = pieces[:i] + pieces[i + 1:]
@@ -233,5 +252,5 @@ class PentominoSolver:
                     return
 
 if __name__ == "__main__":
-    solver = PentominoSolver(5, 5, randomize=False)
+    solver = PentominoSolver(5, 5, randomize=True)
     solver.run()
