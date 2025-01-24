@@ -12,18 +12,9 @@ pip install pygame
 
 Klasa `PentominoSolver` jest implementacją rozwiązania problemu układania klocków pentomino na planszy o wymiarach x na y. Klocki pentomino to figury składające się z pięciu kwadratowych pól, które muszą zostać umieszczone na planszy, przestrzegając kilku zasad:
 
-- Pierwszy klocek musi dotykać ścian planszy.
-- Kolejne klocki muszą być przylegające do innego już umieszczonego klocka.
+- Postawienie klocka nie może stworzyć niewypełnialnej przestrzeni.
 - Klocki nie mogą się nakładać.
 - Klocki nie mogą wychodzić poza planszę.
-
-## Konstruktor
-
-Konstruktor klasy przyjmuje następujące parametry:
-
-- `x` – liczba kolumn w planszy,
-- `y` – liczba wierszy w planszy,
-- `randomize` – flaga określająca, czy początkowa kolejność klocków ma być losowa.
 
 Plansza jest reprezentowana jako macierz o wymiarach x na y, gdzie 0 oznacza puste pole, a liczba większa od 0 oznacza konkretne miejsce zajęte przez konkretny klocek.
 
@@ -31,61 +22,63 @@ Jeśli x * y nie jest podzielne przez 5, podnosi wyjątek `ValueError`. Warunek 
 
 ## Metody
 
-### `get_pentomino_pieces()`
+### `randomize_pentomino()`
 
-Zwraca klocki pentomino wraz ze wszystkimi ich możliwymi rotacjami. 
-Rotacje są przeprowadzane zarówno o 90 stopni, jak i symetrycznie względem osi X i Y.
+Zwraca klocki pentomino w losowej kolejności w celu randomizacji rozwiąząń.
 
-### `generate_unique_colors(num_colors)`
-
-Generuje unikalne kolory dla klocków pentomino.
-
-### `can_place(shape, x, y)`
+### `can_place_piece(board_x, board_y, piece)`
 
 Sprawdza, czy klocek o danym kształcie może zostać umieszczony na planszy w określonym miejscu. Warunki, które są sprawdzane to:
 
 - Czy klocek nie wychodzi poza planszę.
 - Czy klocek nie nakłada się na inne klocki.
-- Dla pierwszego klocka – czy dotyka ściany planszy.
-- Dla kolejnych klocków – czy przylega do innego klocka (ograniczenie liczby sprawdzanych możliwośći).
+- Czy umieszczenie klocka nie tworzy niewypełnialnej przestrzeni.
 
-### `place(shape, x, y, piece_id)`
+###  `has_unfillable_gaps(temp_board)`
 
-Umieszcza klocek na planszy w danym miejscu i rysuje zaktualizowaną planszę. Po umieszczeniu klocka, jego identyfikator jest dodawany do zbioru `placed_pieces`.
+Sprawdza, czy na planszy istnieją luki, których nie można wypełnić.
 
-### `remove(shape, x, y, piece_id)`
+Funkcja używa algorytmu flood fill do zidentyfikowania i zmierzenia rozmiaru każdej luki na planszy. Jeśli rozmiar luki nie jest wielokrotnością 5, funkcja zwraca `True`, co oznacza, że istnieje luka, której nie można wypełnić. W przeciwnym razie zwraca `False`.
 
-Usuwa klocek z planszy, podmieniając "id klocka" na 0 w miejscach, gdzie był umieszczony. Po usunięciu, identyfikator klocka jest usuwany ze zbioru `placed_pieces`.
+### `place_piece(board_x, board_y, piece, piece_index)`
 
-### `has_unfillable_gaps(pieces)`
+Umieszcza klocek na planszy w danym miejscu. Po umieszczeniu klocka, jego identyfikator jest dodawany do zbioru `used_pieces` (już poza funkcją).
 
-Sprawdza, czy na planszy znajdują się luki, które nie mogą zostać wypełnione przez dostępne klocki. Luki są analizowane za pomocą algorytmu DFS, który przeszukuje wszystkie puste komórki i sprawdza, czy możliwe jest ich wypełnienie odpowiednimi klockami. Sprawdzanie luk, których nie da się wypełnić ograncza bezsensowne rozwiązania.
+### `remove_piece(board_x, board_y, piece)`
 
-### `can_fill_gap_with_pieces(gap, pieces)`
-
-Sprawdza, czy dane luki mogą zostać wypełnione dostępnymi klockami. Jest to funkcja pomocnicza dla metody `has_unfillable_gaps`.
+Usuwa klocek z planszy, podmieniając "id klocka" na 0 w miejscach, gdzie był umieszczony. Po usunięciu, identyfikator klocka jest usuwany ze zbioru `used_pieces` (już poza funkcją).
 
 ### `draw_board()`
 
 Rysuje planszę na ekranie. Każde pole na planszy jest rysowane jako kwadrat, a klocki są przedstawiane w odpowiednich kolorach. Dodatkowo, rysowane są klocki, które można umieścić na planszy.
 
-### `is_adjacent(x, y)`
-
-Sprawdza, czy podane pole przylega do innego klocka na planszy. Funkcja ta jest używana w metodzie `can_place`.
-
 ### `solve(pieces)`
 
 Rekurencyjna funkcja rozwiązująca problem układania klocków. Próbuję umieścić wszystkie klocki na planszy. Jeśli uda się umieścić wszystkie klocki, zwraca wartość True. W przeciwnym przypadku cofa ostatnie umieszczenie klocka i próbuje ponownie.
 
-### `run()`
+### `get_unique_pieces(pieces)`
 
-Funkcja startowa, która uruchamia rozwiązywanie problemu. Inicjalizuje odpowiednie ustawienia i wywołuje metodę `solve`.
+Usuwa duplikaty z listy kształtów klocków, zwracając tylko unikalne kształty.
+
+### `rotate_piece(piece)`
+
+Zwraca nową wersję klocka, która jest jego obrotem o 90 stopni zgodnie z ruchem wskazówek zegara.
+
+### `get_piece_rotations(piece)`
+
+Tworzy listę wszystkich możliwych rotacji i odbić lustrzanych danego klocka, eliminując duplikaty, aby uniknąć powtórzeń.
+
+### `get_mirrored_piece(piece)`
+
+Zwraca odbicie lustrzane danego klocka w osi pionowej.
 
 ## Użycie
 
-Aby rozpocząć rozwiązywanie problemu, należy stworzyć obiekt klasy `PentominoSolver` z odpowiednimi parametrami i wywołać metodę `run()`.
+Wywołujemy funkcję `solve` z ewentualną zmianą wymiarów planszy.
 
 ```python
-solver = PentominoSolver(5, 3, randomize=False)
-solver.run()
+BOARD_WIDTH = 5
+BOARD_HEIGHT = 10
+
+solve(board, used_pieces)
 ```
