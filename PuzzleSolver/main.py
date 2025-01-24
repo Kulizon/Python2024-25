@@ -106,7 +106,7 @@ PIECE_DISPLAY_PADDING = 30
 sleep_debug = False
 
 def draw_board(screen, board, used_pieces):
-    screen.fill((0, 0, 0))
+    screen.fill((20, 20, 20))
 
     offset_x = (SCREEN_WIDTH_PX - (BOARD_WIDTH * SOLVED_BOARD_CELL_SIZE)) // 2
     offset_y = SCREEN_PADDING
@@ -260,12 +260,12 @@ def solve(board, used_pieces, depth=0):
                 for piece_index, piece in enumerate(pentomino):
                     if used_pieces[piece_index]:
                         continue
-
-                    rotations = get_unique_pieces(
-                        [rotation for piece in get_piece_rotations(pentomino[piece_index]) for rotation in (piece, get_mirrored_piece(piece))]
-                    )
                     
-                    for rotation in rotations:
+                    mirrored_pieces = [piece, get_mirrored_piece(piece)]
+                    rotations = get_unique_pieces([rotation for piece in mirrored_pieces for rotation in get_piece_rotations(piece)])
+                    positions = get_unique_pieces(rotations)
+
+                    for rotation in positions:
                         if place_piece(x, y, rotation, piece_index):
                             update_board(True)
                             if solve(board, used_pieces, depth + 1):
