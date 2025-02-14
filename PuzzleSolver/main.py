@@ -89,7 +89,7 @@ colors = {
     13: (255, 140, 0)
 }
 
-BOARD_WIDTH = 10
+BOARD_WIDTH = 3
 BOARD_HEIGHT = 5
 
 SCREEN_WIDTH_PX = 1200
@@ -102,10 +102,42 @@ SOLVED_BOARD_CELL_SIZE = 35
 PIECE_DISPLAY_CELL_SIZE = 25
 
 PIECE_DISPLAY_OFFSET_Y = 50
-PIECE_DISPLAY_OFFSET_Y = 50
 PIECE_DISPLAY_PADDING = 20
 
 sleep_debug = False
+
+def calculate_piece_variations():
+    piece_variations = {}
+    for piece_index, piece in enumerate(pentomino):
+        rotations = get_piece_variations(piece)
+        piece_variations[piece_index] = rotations
+    return piece_variations
+
+def get_piece_variations(piece):
+    rotations = []
+    for _ in range(4):
+        rotations.append(piece)
+        piece = rotate_piece(piece)
+
+    mirrored_piece = get_mirrored_piece(piece)
+    for _ in range(4):
+        rotations.append(mirrored_piece)
+        mirrored_piece = rotate_piece(mirrored_piece)
+
+    return get_unique_pieces(rotations)
+
+def get_mirrored_piece(piece):
+    return [list(reversed(row)) for row in piece]
+
+def rotate_piece(piece):
+    return [list(row) for row in zip(*reversed(piece))]
+
+def get_unique_pieces(pieces):
+    unique_pieces = []
+    for piece in pieces:
+        if piece not in unique_pieces:
+            unique_pieces.append(piece)
+    return unique_pieces
 
 def draw_board(screen, board, used_pieces):
     screen.fill((20, 20, 20))
@@ -216,39 +248,11 @@ def can_place_piece(board_x, board_y, piece):
                 temp_board[board_y + y][board_x + x] = 1
 
     if has_unfillable_gaps(temp_board):
-        # global sleep_debug
-        # sleep_debug = True
         return False
 
     return True
 
-def rotate_piece(piece):
-    return [list(row) for row in zip(*reversed(piece))]
-
-def get_unique_pieces(pieces):
-    unique_pieces = []
-    for piece in pieces:
-        if piece not in unique_pieces:
-            unique_pieces.append(piece)
-    return unique_pieces
-
-def get_piece_variations(piece):
-    rotations = []
-    for _ in range(4):
-        rotations.append(piece)
-        piece = rotate_piece(piece)
-
-    mirrored_piece = get_mirrored_piece(piece)
-    for _ in range(4):
-        rotations.append(mirrored_piece)
-        mirrored_piece = rotate_piece(mirrored_piece)
-
-    return get_unique_pieces(rotations)
-
-def get_mirrored_piece(piece):
-    return [list(reversed(row)) for row in piece]
-
-def solve(board, used_pieces, depth=0):
+def solve(board, used_pieces, piece_variations, depth=0):
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
@@ -272,12 +276,12 @@ def solve(board, used_pieces, depth=0):
                     if used_pieces[piece_index]:
                         continue
 
-                    rotations = get_piece_variations(piece)
+                    rotations = piece_variations[piece_index]
 
                     for rotation in rotations:
                         if place_piece(x, y, rotation, piece_index):
                             update_board(piece_index, True)
-                            if solve(board, used_pieces, depth + 1):
+                            if solve(board, used_pieces, piece_variations, depth + 1):
                                 return True
 
                             remove_piece(x, y, rotation)
@@ -300,6 +304,8 @@ used_pieces = [False] * len(pentomino)
 if BOARD_HEIGHT * BOARD_WIDTH % 5 != 0:
     raise ValueError("Board size must be divisible by 5")
 
-solve(board, used_pieces)
+piece_variations = calculate_piece_variations()
+
+solve(board, used_pieces, piece_variations)
 
 time.sleep(15)
