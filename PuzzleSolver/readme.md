@@ -64,7 +64,7 @@ Usuwa duplikaty z listy kształtów klocków, zwracając tylko unikalne kształt
 
 Zwraca nową wersję klocka, która jest jego obrotem o 90 stopni zgodnie z ruchem wskazówek zegara.
 
-### `get_piece_rotations(piece)`
+### `get_piece_variations(piece)`
 
 Tworzy listę wszystkich możliwych rotacji i odbić lustrzanych danego klocka, eliminując duplikaty, aby uniknąć powtórzeń.
 

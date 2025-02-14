@@ -77,31 +77,33 @@ colors = {
     1: (0, 255, 0),
     2: (0, 0, 255),
     3: (255, 255, 0),
-    4: (255, 165, 0),
-    5: (128, 0, 128),
-    6: (0, 255, 255),
-    7: (255, 111, 203),
-    8: (128, 128, 0),
-    9: (0, 128, 128),
-    10: (128, 0, 0),
-    11: (0, 128, 0),
-    12: (255, 0, 0)
+    4: (255, 69, 0),
+    5: (153, 50, 204),
+    6: (0, 206, 209),
+    7: (255, 20, 147),
+    8: (139, 69, 19),
+    9: (70, 130, 180),
+    10: (178, 34, 34),
+    11: (34, 139, 34),
+    12: (255, 0, 0),
+    13: (255, 140, 0)
 }
 
-BOARD_WIDTH = 5
-BOARD_HEIGHT = 10
+BOARD_WIDTH = 10
+BOARD_HEIGHT = 5
 
-SCREEN_WIDTH_PX = 800
+SCREEN_WIDTH_PX = 1200
 SCREEN_HEIGHT_PX = 600
 
 SCREEN_PADDING = 20
+PIECE_PADDING = 5
 
-SOLVED_BOARD_CELL_SIZE = 30
+SOLVED_BOARD_CELL_SIZE = 35
 PIECE_DISPLAY_CELL_SIZE = 25
 
 PIECE_DISPLAY_OFFSET_Y = 50
 PIECE_DISPLAY_OFFSET_Y = 50
-PIECE_DISPLAY_PADDING = 30
+PIECE_DISPLAY_PADDING = 20
 
 sleep_debug = False
 
@@ -110,53 +112,60 @@ def draw_board(screen, board, used_pieces):
 
     offset_x = (SCREEN_WIDTH_PX - (BOARD_WIDTH * SOLVED_BOARD_CELL_SIZE)) // 2
     offset_y = SCREEN_PADDING
-    padding = 2
+
     for row_cell, row in enumerate(board):
         for col in range(len(row)):
             piece_index = row[col]
 
-            rect = pygame.Rect(offset_x + col * (SOLVED_BOARD_CELL_SIZE + padding), 
-                               offset_y + row_cell * (SOLVED_BOARD_CELL_SIZE + padding), 
+            rect = pygame.Rect(offset_x + col * (SOLVED_BOARD_CELL_SIZE + PIECE_PADDING), 
+                               offset_y + row_cell * (SOLVED_BOARD_CELL_SIZE + PIECE_PADDING), 
                                SOLVED_BOARD_CELL_SIZE, 
                                SOLVED_BOARD_CELL_SIZE)
-            pygame.draw.rect(screen, colors[piece_index], rect, SOLVED_BOARD_CELL_SIZE)
 
-    offset_y += (BOARD_HEIGHT * (SOLVED_BOARD_CELL_SIZE + padding)) + PIECE_DISPLAY_OFFSET_Y
-    offset_x = PIECE_DISPLAY_OFFSET_Y
+            pygame.draw.rect(screen, colors[piece_index], rect) 
+
+    offset_y += (BOARD_HEIGHT * (SOLVED_BOARD_CELL_SIZE + PIECE_PADDING)) + PIECE_DISPLAY_OFFSET_Y
+    offset_x = SCREEN_PADDING
+
+    START_X = (SCREEN_WIDTH_PX - (3.5 * (PIECE_DISPLAY_CELL_SIZE + PIECE_PADDING) + PIECE_DISPLAY_PADDING) * 6) // 2
 
     drawn_pieces = 0
-    current_piece_x = 0
+    current_piece_x = START_X
     current_piece_y = 0
     current_max_piece_height = 0
+
     for piece_index, used in enumerate(used_pieces):
         if used:
             continue
 
         if drawn_pieces % 6 == 0:
-            current_piece_x = 0
+            current_piece_x = START_X
             current_piece_y += PIECE_DISPLAY_CELL_SIZE * current_max_piece_height + PIECE_DISPLAY_PADDING
+            current_max_piece_height = 0
 
         piece = pentomino[piece_index]
 
         for y, row in enumerate(piece):
             for x, cell in enumerate(row):
                 if cell != 0:
-                    rect = pygame.Rect(offset_x + current_piece_x + x * (PIECE_DISPLAY_CELL_SIZE + padding), 
-                                       offset_y + current_piece_y + y * (PIECE_DISPLAY_CELL_SIZE + padding), 
+                    rect = pygame.Rect(offset_x + current_piece_x + x * (PIECE_DISPLAY_CELL_SIZE + PIECE_PADDING), 
+                                       offset_y + current_piece_y + y * (PIECE_DISPLAY_CELL_SIZE + PIECE_PADDING), 
                                        PIECE_DISPLAY_CELL_SIZE, 
-                                       PIECE_DISPLAY_CELL_SIZE) 
-                    pygame.draw.rect(screen, colors[piece_index], rect, SOLVED_BOARD_CELL_SIZE)
+                                       PIECE_DISPLAY_CELL_SIZE)
 
-        current_piece_x += len(piece[0]) * (PIECE_DISPLAY_CELL_SIZE + padding) + PIECE_DISPLAY_PADDING
+                    pygame.draw.rect(screen, colors[piece_index + 1], rect)
+
+        current_piece_x += len(piece[0]) * (PIECE_DISPLAY_CELL_SIZE + PIECE_PADDING) + PIECE_DISPLAY_PADDING
         current_max_piece_height = max(current_max_piece_height, len(piece))
         drawn_pieces += 1
-    
+
     pygame.display.flip()
 
     global sleep_debug
     if sleep_debug:
         sleep_debug = False
-        time.sleep(3)
+        time.sleep(5)
+
 
 def place_piece(board_x, board_y, piece, piece_index):
     if not can_place_piece(board_x, board_y, piece):
@@ -165,15 +174,15 @@ def place_piece(board_x, board_y, piece, piece_index):
     for y, row in enumerate(piece):
         for x, cell in enumerate(row):
             if cell != 0:
-                board[board_y + y][board_x + x] = piece_index
+                board[board_y + y][board_x + x] = piece_index + 1 
     return True
 
 def remove_piece(board_x, board_y, piece):
     for y, row in enumerate(piece):
         for x, cell in enumerate(row):
             if cell != 0:
-                board[board_y + y][board_x + x] = 0
-    
+                board[board_y + y][board_x + x] = 0 
+
 def has_unfillable_gaps(board):
     def flood_fill(x, y):
         if x < 0 or x >= BOARD_WIDTH or y < 0 or y >= BOARD_HEIGHT or board[y][x] != 0:
@@ -223,17 +232,17 @@ def get_unique_pieces(pieces):
             unique_pieces.append(piece)
     return unique_pieces
 
-def get_piece_rotations(piece):
+def get_piece_variations(piece):
     rotations = []
     for _ in range(4):
         rotations.append(piece)
         piece = rotate_piece(piece)
-    
+
     mirrored_piece = get_mirrored_piece(piece)
     for _ in range(4):
         rotations.append(mirrored_piece)
         mirrored_piece = rotate_piece(mirrored_piece)
-    
+
     return get_unique_pieces(rotations)
 
 def get_mirrored_piece(piece):
@@ -248,11 +257,13 @@ def solve(board, used_pieces, depth=0):
     if all(used_pieces) or not any(0 in row for row in board):
         draw_board(screen, board, used_pieces)
         return True
-    
-    def update_board(added):
+
+    def update_board(piece_index, added):
         used_pieces[piece_index] = added
         draw_board(screen, board, used_pieces)
-        time.sleep(0.001)
+        time.sleep(1)
+
+    draw_board(screen, board, used_pieces)
 
     for y in range(BOARD_HEIGHT):
         for x in range(BOARD_WIDTH):
@@ -260,19 +271,17 @@ def solve(board, used_pieces, depth=0):
                 for piece_index, piece in enumerate(pentomino):
                     if used_pieces[piece_index]:
                         continue
-                    
-                    mirrored_pieces = [piece, get_mirrored_piece(piece)]
-                    rotations = get_unique_pieces([rotation for piece in mirrored_pieces for rotation in get_piece_rotations(piece)])
-                    positions = get_unique_pieces(rotations)
 
-                    for rotation in positions:
+                    rotations = get_piece_variations(piece)
+
+                    for rotation in rotations:
                         if place_piece(x, y, rotation, piece_index):
-                            update_board(True)
+                            update_board(piece_index, True)
                             if solve(board, used_pieces, depth + 1):
                                 return True
 
                             remove_piece(x, y, rotation)
-                            update_board(False)
+                            update_board(piece_index, False)
 
                 return False
     return False
