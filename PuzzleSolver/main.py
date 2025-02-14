@@ -89,8 +89,8 @@ colors = {
     13: (255, 140, 0)
 }
 
-BOARD_WIDTH = 3
-BOARD_HEIGHT = 5
+BOARD_WIDTH = 5
+BOARD_HEIGHT = 10
 
 SCREEN_WIDTH_PX = 1200
 SCREEN_HEIGHT_PX = 600
@@ -198,7 +198,6 @@ def draw_board(screen, board, used_pieces):
         sleep_debug = False
         time.sleep(5)
 
-
 def place_piece(board_x, board_y, piece, piece_index):
     if not can_place_piece(board_x, board_y, piece):
         return False
@@ -206,7 +205,8 @@ def place_piece(board_x, board_y, piece, piece_index):
     for y, row in enumerate(piece):
         for x, cell in enumerate(row):
             if cell != 0:
-                board[board_y + y][board_x + x] = piece_index + 1 
+                board[board_y + y][board_x + x] = piece_index + 1
+
     return True
 
 def remove_piece(board_x, board_y, piece):
@@ -231,16 +231,17 @@ def has_unfillable_gaps(board):
     return False
 
 def can_place_piece(board_x, board_y, piece):
-    if board_y + len(piece) > BOARD_HEIGHT:
-        return False
-    if board_x + len(piece[0]) > BOARD_WIDTH:
+    if board_y + len(piece) > BOARD_HEIGHT or board_x + len(piece[0]) > BOARD_WIDTH:
         return False
 
     for y, row in enumerate(piece):
         for x, cell in enumerate(row):
-            if cell != 0 and board[board_y + y][board_x + x] != 0:
-                return False
-            
+            if cell != 0:  
+                if board_y + y >= BOARD_HEIGHT or board_x + x >= BOARD_WIDTH:
+                    return False
+                if board[board_y + y][board_x + x] != 0:
+                    return False
+
     temp_board = [row[:] for row in board]
     for y, row in enumerate(piece):
         for x, cell in enumerate(row):
@@ -252,6 +253,11 @@ def can_place_piece(board_x, board_y, piece):
 
     return True
 
+def update_board(used_pieces, piece_index, added):
+    used_pieces[piece_index] = added
+    draw_board(screen, board, used_pieces)
+    time.sleep(0.05)
+
 def solve(board, used_pieces, piece_variations, depth=0):
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -262,12 +268,26 @@ def solve(board, used_pieces, piece_variations, depth=0):
         draw_board(screen, board, used_pieces)
         return True
 
-    def update_board(piece_index, added):
-        used_pieces[piece_index] = added
-        draw_board(screen, board, used_pieces)
-        time.sleep(1)
-
     draw_board(screen, board, used_pieces)
+
+    empty_cells = [(y, x) for y in range(BOARD_HEIGHT) for x in range(BOARD_WIDTH) if board[y][x] == 0]
+    if len(empty_cells) == 5:
+        for piece_index, _ in enumerate(pentomino):
+            if used_pieces[piece_index]:
+                continue
+
+            rotations = piece_variations[piece_index]
+
+            for rotation in rotations:
+                for y in range(BOARD_HEIGHT):
+                    for x in range(BOARD_WIDTH):
+                        if place_piece(x, y, rotation, piece_index):
+                            update_board(used_pieces, piece_index, True)
+                            draw_board(screen, board, used_pieces)
+                            time.sleep(5)
+                            return True
+
+        return False
 
     for y in range(BOARD_HEIGHT):
         for x in range(BOARD_WIDTH):
@@ -280,22 +300,15 @@ def solve(board, used_pieces, piece_variations, depth=0):
 
                     for rotation in rotations:
                         if place_piece(x, y, rotation, piece_index):
-                            update_board(piece_index, True)
+                            update_board(used_pieces, piece_index, True)
                             if solve(board, used_pieces, piece_variations, depth + 1):
                                 return True
 
                             remove_piece(x, y, rotation)
-                            update_board(piece_index, False)
+                            update_board(used_pieces, piece_index, False)
 
                 return False
     return False
-
-def randomize_pentomino(pentomino):
-    randomized_pentomino = pentomino[:]
-    random.shuffle(randomized_pentomino)
-    return randomized_pentomino
-
-pentomino = randomize_pentomino(pentomino)
 
 screen = pygame.display.set_mode((SCREEN_WIDTH_PX + SCREEN_PADDING, SCREEN_HEIGHT_PX + SCREEN_PADDING))
 board = [[0] * BOARD_WIDTH for _ in range(BOARD_HEIGHT)]
@@ -308,4 +321,8 @@ piece_variations = calculate_piece_variations()
 
 solve(board, used_pieces, piece_variations)
 
-time.sleep(15)
+update_board(used_pieces, 0, False)
+
+time.sleep(5)
+
+pygame.quit()
